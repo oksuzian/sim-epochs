@@ -38,8 +38,25 @@ current    nts  Run1Ban        19 nts.mu2e.CeEndpoint-KL.Run1Baw_best_v1_5.root 
 ```
 
 87 rows: 31 dig, 29 mcs, 27 nts. Columns are status, tier, epoch,
-number of files, dataset. `--status stale` lists what is owed a remake,
-`--status superseded` what has been replaced. For one dataset:
+number of files, dataset. `--status superseded` lists what has been
+replaced (53 in Run1B). `--status stale` is where this differs from
+picking the newest name:
+
+```
+$ bin/epochs members --family Run1B --status stale
+stale      mcs  Run1Bah        10 mcs.mu2e.MuCap1809keVCalo-KL.Run1Bah_best_v1_4-001.art
+stale      mcs  Run1Bav      1998 mcs.mu2e.NoPrimaryMix1BB-KL.Run1Baw_best_v1_5-002.art
+stale      nts  Run1Bah        10 nts.mu2e.MuCap1809keVCalo-KL.Run1B-005.root
+stale      nts  Run1Bav      1998 nts.mu2e.NoPrimaryMix1BB-KL.Run1Baw_best_v1_5-002.root
+```
+
+Each is the newest name of its kind, so a name-only tool calls it
+latest. The MuCap1809keVCalo dig was remade under MDC2025aw and never
+re-reconstructed, so the Run1Bah reco is the one to use today and a
+remake is owed. The NoPrimaryMix1BB reco was made from the 20000-file
+dig `-001`, which a 2000-file dig `-003` has since superseded by name.
+Note the ntuple `Run1B-005`: its name carries no campaign at all; only
+parentage places it in epoch Run1Bah. For one dataset:
 
 ```
 $ bin/epochs lookup --family Run1B dig.mu2e.CeEndpoint.Run1Ban_best_v1_4-000.art
