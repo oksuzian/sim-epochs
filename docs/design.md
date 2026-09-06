@@ -10,7 +10,7 @@ updated: 2026-09-05
 **Status: design settled internally 2026-09-03 (Yuri + Claude grill,
 19 questions, section 17); not yet agreed with Ray.** Drafted 2026-09-02
 after the EventNtuple calo-hit remake (see
-[[2026-09-02-eventntuple-v0200-calo-hits-cluster-gated]]). Sections
+2026-09-02-eventntuple-v0200-calo-hits-cluster-gated). Sections
 marked "decided" or "grill" override the original text where they
 differ. Glossary: `CONTEXT.md` (Epoch, Root, Input, Family, Sibling,
 status, Hold, Gap, Generation). ADRs 0003 and 0004.
@@ -699,7 +699,7 @@ nothing, and the ntuple `MDC2025-NNN` series would change convention).
 
 Question: does sim-epochs need prodtools? Throwaway copy at
 `claude-scratch/diag/sim-epochs-standalone/` (not committed, delete at
-will): `utils/epochs/` copied to `sim_epochs/`, the four prodtools
+will): `sim_epochs/` copied to `sim_epochs/`, the four prodtools
 imports (`Mu2eName`, `Mu2eJobPars`, four `samweb_wrapper` calls,
 `path_from_sam_location`) replaced by one 126-line `sim_epochs/mu2e.py`
 — a 5-or-6-field dot-name parser, a tarball reader for `jobpars.json`

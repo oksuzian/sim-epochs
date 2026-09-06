@@ -74,13 +74,13 @@ No upstream deletions are proposed by this version of `epochs retire`;
 (`publish.catalog_document`) carries no `inputs`, `input_retirement_refused`,
 `input_graph_incomplete` or `input_depth` keys. `CONTEXT.md`'s "Input"
 entry, `docs/EXAMPLES_schema.md`'s `epochs` entry, and
-`wiki/pages/2026-09-02-sim-epochs-design.md` are updated to say so.
+`docs/design.md` are updated to say so.
 Observable change on today's production data: none — the removed
 incompleteness guard already suppressed the input section on every real
 build (30 legacy dsconf names did not parse), so `retire()` was already
 members-only in practice.
 
-`utils/epochs/source.py`'s `nfiles()` is also removed: its only caller
+`sim_epochs/source.py`'s `nfiles()` is also removed: its only caller
 was the input-record bookkeeping in the walk this ADR retires.
 `source.parents()` stays — `graph._walk_down` still calls it, both to
 find a member's declared cnf parent (ADR 0003's generation route) and

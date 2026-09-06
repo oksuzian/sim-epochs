@@ -6,9 +6,9 @@
 
 **Architecture:** One small curated JSON file per digitization campaign in `data/epochs/`; everything else computed at run time from SAM parentage (`ischildof:` / `isparentof:` dataset queries) and from the cnf tarballs. A pure Python core (parser, graph, status, reports) that takes an injected data source, so the whole suite runs without the Mu2e environment; one thin `SamSource` over `utils/samweb_wrapper`; one argparse CLI. Nothing is ever written to SAM or metacat.
 
-**Tech Stack:** Python 3.9 (cvmfs floor), `typing.NamedTuple` / `dataclasses`, `unittest` classes under the `pytest` runner (`test/test_epochs.py`), `utils.samweb_wrapper`, `utils.job_common.Mu2eName`, `utils.jobquery.Mu2eJobPars`.
+**Tech Stack:** Python 3.9 (cvmfs floor), `typing.NamedTuple` / `dataclasses`, `unittest` classes under the `pytest` runner (`tests/test_epochs.py`), `utils.samweb_wrapper`, `utils.job_common.Mu2eName`, `utils.jobquery.Mu2eJobPars`.
 
-**Spec:** `wiki/pages/2026-09-02-sim-epochs-design.md` (sections marked "decided" and the section 17 table are authoritative), glossary `CONTEXT.md` (Epoch, Root, Input, Family, Sibling, status, Hold, Gap, Generation), `docs/adr/0003-cnf-tarball-declared-as-sam-parent.md`, `docs/adr/0004-epoch-catalog-derived-never-stored.md`.
+**Spec:** `docs/design.md` (sections marked "decided" and the section 17 table are authoritative), glossary `CONTEXT.md` (Epoch, Root, Input, Family, Sibling, status, Hold, Gap, Generation), `docs/adr/0003-cnf-tarball-declared-as-sam-parent.md`, `docs/adr/0004-epoch-catalog-derived-never-stored.md`.
 
 **Out of scope for this plan** (separate plans): the `runmu2e.push_data` change that declares the cnf as a parent (ADR 0003 code side); the MCP tools on the `prodtools` server; the `input_epoch` production hook (deferred by decision 16).
 
@@ -21,7 +21,7 @@
 - **Nothing derived is stored** (ADR 0004). The only files written under `data/epochs/` are the curated epoch files (`propose` verb) and the cnf index (immutable facts, decision 6 backfill). Status, gaps, retire lists are always recomputed.
 - Status vocabulary is exactly `current`, `stale`, `superseded`. A hold is not a status.
 - Tiers `log`, `cnf`, `etc` are never members.
-- Tests run standalone: `test/test_epochs.py` stubs `samweb_client` and `ifdh` exactly as `test/test_unit.py` does, and every SAM access goes through an injected source object.
+- Tests run standalone: `tests/test_epochs.py` stubs `samweb_client` and `ifdh` exactly as `test/test_unit.py` does, and every SAM access goes through an injected source object.
 - Commit after every task with the project trailer:
   ```
   Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -35,18 +35,18 @@
 
 | File | Responsibility |
 |---|---|
-| `utils/epochs/__init__.py` | Package marker, one docstring. |
-| `utils/epochs/dsconf.py` | Parse a dsconf string into `DsconfKey`; ordering; family extraction. Pure. |
-| `utils/epochs/epoch_files.py` | Load, validate, propose and write `data/epochs/<letters>.json`. Pure except file I/O. |
-| `utils/epochs/source.py` | `SamSource`: the only module that imports `utils.samweb_wrapper`. Dataset-level children, parents, file counts, cnf listing, local path of a SAM file. |
-| `utils/epochs/graph.py` | `Member`, `Catalog`; build members and inputs from roots by walking a source. Pure given a source. |
-| `utils/epochs/status.py` | Assign `current`/`stale`/`superseded` and holds. Pure. |
-| `utils/epochs/generation.py` | `Generation` from a cnf tarball; cnf lookup by parent or index; index build. |
-| `utils/epochs/reports.py` | gaps, consistency, retire (with Ray's purge line format), lookup. Pure. |
-| `utils/epochs/publish.py` | Build the catalog JSON in Ray's shape plus our fields. Pure. |
-| `utils/epochs/cli.py` | argparse verbs and text rendering. |
+| `sim_epochs/__init__.py` | Package marker, one docstring. |
+| `sim_epochs/dsconf.py` | Parse a dsconf string into `DsconfKey`; ordering; family extraction. Pure. |
+| `sim_epochs/epoch_files.py` | Load, validate, propose and write `data/epochs/<letters>.json`. Pure except file I/O. |
+| `sim_epochs/source.py` | `SamSource`: the only module that imports `utils.samweb_wrapper`. Dataset-level children, parents, file counts, cnf listing, local path of a SAM file. |
+| `sim_epochs/graph.py` | `Member`, `Catalog`; build members and inputs from roots by walking a source. Pure given a source. |
+| `sim_epochs/status.py` | Assign `current`/`stale`/`superseded` and holds. Pure. |
+| `sim_epochs/generation.py` | `Generation` from a cnf tarball; cnf lookup by parent or index; index build. |
+| `sim_epochs/reports.py` | gaps, consistency, retire (with Ray's purge line format), lookup. Pure. |
+| `sim_epochs/publish.py` | Build the catalog JSON in Ray's shape plus our fields. Pure. |
+| `sim_epochs/cli.py` | argparse verbs and text rendering. |
 | `bin/epochs` | Python wrapper, same shape as `bin/latestDatasets`. |
-| `test/test_epochs.py` | All tests, with `FakeSource`. |
+| `tests/test_epochs.py` | All tests, with `FakeSource`. |
 | `data/epochs/*.json` | Curated epoch files, created by `propose`, edited by people. |
 | `data/epochs/cnf_index.json` | dataset → cnf name, built by `index-cnfs`. |
 
@@ -55,9 +55,9 @@
 ### Task 1: dsconf parser and ordering
 
 **Files:**
-- Create: `utils/epochs/__init__.py`
-- Create: `utils/epochs/dsconf.py`
-- Create: `test/test_epochs.py`
+- Create: `sim_epochs/__init__.py`
+- Create: `sim_epochs/dsconf.py`
+- Create: `tests/test_epochs.py`
 
 **Interfaces:**
 - Produces: `DsconfKey(family, letters, rev, purpose, major, minor, suffix, extra)` NamedTuple; `parse_dsconf(s) -> DsconfKey` raising `DsconfParseError(ValueError)`; `DsconfKey.sort_key() -> tuple`; `family_of(s) -> str`.
@@ -145,20 +145,20 @@ if __name__ == '__main__':
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `python3 -m pytest test/test_epochs.py -q`
+Run: `python3 -m pytest tests/test_epochs.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'utils.epochs'`
 
 - [ ] **Step 3: Write the package marker and the parser**
 
-`utils/epochs/__init__.py`:
+`sim_epochs/__init__.py`:
 ```python
 """Sim-epochs catalog: derive dataset status from SAM, never store it.
 
-See wiki/pages/2026-09-02-sim-epochs-design.md and CONTEXT.md.
+See docs/design.md and CONTEXT.md.
 """
 ```
 
-`utils/epochs/dsconf.py`:
+`sim_epochs/dsconf.py`:
 ```python
 """Parse and order Mu2e dsconf strings.
 
@@ -232,13 +232,13 @@ def family_of(s: str) -> str:
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `python3 -m pytest test/test_epochs.py -q`
+Run: `python3 -m pytest tests/test_epochs.py -q`
 Expected: `13 passed`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add utils/epochs/__init__.py utils/epochs/dsconf.py test/test_epochs.py
+git add sim_epochs/__init__.py sim_epochs/dsconf.py tests/test_epochs.py
 git commit -m "feat(epochs): dsconf parser and clock-free ordering
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -250,8 +250,8 @@ Claude-Session: https://claude.ai/code/session_0115w5JympLoYF5uk2FkXiAC"
 ### Task 2: epoch files — load, validate, propose
 
 **Files:**
-- Create: `utils/epochs/epoch_files.py`
-- Modify: `test/test_epochs.py` (append)
+- Create: `sim_epochs/epoch_files.py`
+- Modify: `tests/test_epochs.py` (append)
 
 **Interfaces:**
 - Consumes: `parse_dsconf`, `family_of` from Task 1.
@@ -338,12 +338,12 @@ class TestEpochFiles(unittest.TestCase):
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `python3 -m pytest test/test_epochs.py -q -k TestEpochFiles`
+Run: `python3 -m pytest tests/test_epochs.py -q -k TestEpochFiles`
 Expected: FAIL with `ImportError` on `utils.epochs.epoch_files`
 
 - [ ] **Step 3: Write the module**
 
-`utils/epochs/epoch_files.py`:
+`sim_epochs/epoch_files.py`:
 ```python
 """Curated epoch files: data/epochs/<letters>.json.
 
@@ -473,13 +473,13 @@ def write_epoch_file(dirpath: str, data: dict) -> str:
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `python3 -m pytest test/test_epochs.py -q`
+Run: `python3 -m pytest tests/test_epochs.py -q`
 Expected: `21 passed`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add utils/epochs/epoch_files.py test/test_epochs.py
+git add sim_epochs/epoch_files.py tests/test_epochs.py
 git commit -m "feat(epochs): curated epoch files — load, validate, propose
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -491,8 +491,8 @@ Claude-Session: https://claude.ai/code/session_0115w5JympLoYF5uk2FkXiAC"
 ### Task 3: the SAM source and its fake
 
 **Files:**
-- Create: `utils/epochs/source.py`
-- Modify: `test/test_epochs.py` (append `FakeSource` and source tests)
+- Create: `sim_epochs/source.py`
+- Modify: `tests/test_epochs.py` (append `FakeSource` and source tests)
 
 **Interfaces:**
 - Consumes: `utils.samweb_wrapper.list_files`, `count_files`, `definitions_matching`, `locate_file`, `file_lineage`; `utils.job_common.Mu2eName`.
@@ -607,12 +607,12 @@ class TestSamSourceQueries(unittest.TestCase):
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `python3 -m pytest test/test_epochs.py -q -k "TestGroupFiles or TestSamSourceQueries"`
+Run: `python3 -m pytest tests/test_epochs.py -q -k "TestGroupFiles or TestSamSourceQueries"`
 Expected: FAIL with `ImportError` on `utils.epochs.source`
 
 - [ ] **Step 3: Write the module**
 
-`utils/epochs/source.py`:
+`sim_epochs/source.py`:
 ```python
 """The only module in utils/epochs that talks to SAM.
 
@@ -741,13 +741,13 @@ class SamSource:
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `python3 -m pytest test/test_epochs.py -q`
+Run: `python3 -m pytest tests/test_epochs.py -q`
 Expected: `27 passed`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add utils/epochs/source.py test/test_epochs.py
+git add sim_epochs/source.py tests/test_epochs.py
 git commit -m "feat(epochs): SamSource — dataset-level lineage via ischildof/isparentof
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -759,8 +759,8 @@ Claude-Session: https://claude.ai/code/session_0115w5JympLoYF5uk2FkXiAC"
 ### Task 4: build the graph — members and inputs from roots
 
 **Files:**
-- Create: `utils/epochs/graph.py`
-- Modify: `test/test_epochs.py` (append)
+- Create: `sim_epochs/graph.py`
+- Modify: `tests/test_epochs.py` (append)
 
 **Interfaces:**
 - Consumes: `EpochFile`, `parse_dsconf`, a source with `dig_datasets/children/parents`.
@@ -891,12 +891,12 @@ class TestBuildCatalog(unittest.TestCase):
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `python3 -m pytest test/test_epochs.py -q -k "TestRootMatches or TestBuildCatalog"`
+Run: `python3 -m pytest tests/test_epochs.py -q -k "TestRootMatches or TestBuildCatalog"`
 Expected: FAIL with `ImportError` on `utils.epochs.graph`
 
 - [ ] **Step 3: Write the module**
 
-`utils/epochs/graph.py`:
+`sim_epochs/graph.py`:
 ```python
 """Members and inputs of every epoch, from SAM parentage.
 
@@ -1050,13 +1050,13 @@ def _apply_pins(cat: Catalog):
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `python3 -m pytest test/test_epochs.py -q`
+Run: `python3 -m pytest tests/test_epochs.py -q`
 Expected: `35 passed`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add utils/epochs/graph.py test/test_epochs.py
+git add sim_epochs/graph.py tests/test_epochs.py
 git commit -m "feat(epochs): build members and inputs from roots by SAM parentage
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -1068,8 +1068,8 @@ Claude-Session: https://claude.ai/code/session_0115w5JympLoYF5uk2FkXiAC"
 ### Task 5: status — current, stale, superseded
 
 **Files:**
-- Create: `utils/epochs/status.py`
-- Modify: `test/test_epochs.py` (append)
+- Create: `sim_epochs/status.py`
+- Modify: `tests/test_epochs.py` (append)
 
 **Interfaces:**
 - Consumes: `Catalog`, `Member`.
@@ -1158,12 +1158,12 @@ class TestStatus(unittest.TestCase):
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `python3 -m pytest test/test_epochs.py -q -k TestStatus`
+Run: `python3 -m pytest tests/test_epochs.py -q -k TestStatus`
 Expected: FAIL with `ImportError` on `utils.epochs.status`
 
 - [ ] **Step 3: Write the module**
 
-`utils/epochs/status.py`:
+`sim_epochs/status.py`:
 ```python
 """Derive current / stale / superseded (decisions 3, 4, 5, 7).
 
@@ -1259,13 +1259,13 @@ def assign_status(cat: Catalog) -> Catalog:
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `python3 -m pytest test/test_epochs.py -q`
+Run: `python3 -m pytest tests/test_epochs.py -q`
 Expected: `44 passed`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add utils/epochs/status.py test/test_epochs.py
+git add sim_epochs/status.py tests/test_epochs.py
 git commit -m "feat(epochs): current/stale/superseded across epochs, holds separate
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -1277,8 +1277,8 @@ Claude-Session: https://claude.ai/code/session_0115w5JympLoYF5uk2FkXiAC"
 ### Task 6: reports — gaps and retire list in Ray's format
 
 **Files:**
-- Create: `utils/epochs/reports.py`
-- Modify: `test/test_epochs.py` (append)
+- Create: `sim_epochs/reports.py`
+- Modify: `tests/test_epochs.py` (append)
 
 **Interfaces:**
 - Consumes: `Catalog` after `assign_status`; `groups`.
@@ -1394,12 +1394,12 @@ class TestLookup(unittest.TestCase):
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `python3 -m pytest test/test_epochs.py -q -k "TestGaps or TestRetire or TestLookup"`
+Run: `python3 -m pytest tests/test_epochs.py -q -k "TestGaps or TestRetire or TestLookup"`
 Expected: FAIL with `ImportError` on `utils.epochs.reports`
 
 - [ ] **Step 3: Write the module**
 
-`utils/epochs/reports.py`:
+`sim_epochs/reports.py`:
 ```python
 """Derived products: gaps, retire list (Ray's purge_proposal format), lookup.
 
@@ -1520,13 +1520,13 @@ def lookup(cat: Catalog, dataset: str) -> Dict:
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `python3 -m pytest test/test_epochs.py -q`
+Run: `python3 -m pytest tests/test_epochs.py -q`
 Expected: `54 passed`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add utils/epochs/reports.py test/test_epochs.py
+git add sim_epochs/reports.py tests/test_epochs.py
 git commit -m "feat(epochs): gap report and retire list in purge_proposal format
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -1538,9 +1538,9 @@ Claude-Session: https://claude.ai/code/session_0115w5JympLoYF5uk2FkXiAC"
 ### Task 7: generation from the cnf, cnf index, consistency report
 
 **Files:**
-- Create: `utils/epochs/generation.py`
-- Modify: `utils/epochs/reports.py` (append `consistency`)
-- Modify: `test/test_epochs.py` (append)
+- Create: `sim_epochs/generation.py`
+- Modify: `sim_epochs/reports.py` (append `consistency`)
+- Modify: `tests/test_epochs.py` (append)
 
 **Interfaces:**
 - Consumes: `utils.jobquery.Mu2eJobPars` (`.setup()`, `.json_data` (raw `tbs.outfiles` templates), `._extract_member('mu2e.fcl')`), a source with `cnf_names()`, `local_path()`, `parents()`.
@@ -1668,12 +1668,12 @@ class TestGeneration(unittest.TestCase):
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `python3 -m pytest test/test_epochs.py -q -k TestGeneration`
+Run: `python3 -m pytest tests/test_epochs.py -q -k TestGeneration`
 Expected: FAIL with `ImportError` on `utils.epochs.generation`
 
 - [ ] **Step 3: Write the generation module**
 
-`utils/epochs/generation.py`:
+`sim_epochs/generation.py`:
 ```python
 """What code made a dataset (decisions 6 and 17).
 
@@ -1819,7 +1819,7 @@ def generations(cat: Catalog, source, index: Dict) -> Dict[str, Optional[Generat
 
 Note for the implementer: `source.parents()` in Task 3 drops the `cnf` tier, so a real SAM cnf parent never reaches `Member.inputs` today; the FakeSource does not drop it, which is how `test_cnf_for_prefers_parent_then_index` exercises the parent route. `cnf_for` checks `m.inputs` for a `cnf.` name because ADR 0003's code plan will make `source.py` keep 6-field `cnf.*.tar` parents (as tarball names, not grouped to a dataset) while still dropping log/etc. Do not change `DROP_TIERS` in `source.py` in this plan.
 
-- [ ] **Step 4: Append `consistency` to `utils/epochs/reports.py`**
+- [ ] **Step 4: Append `consistency` to `sim_epochs/reports.py`**
 
 ```python
 def consistency(cat: Catalog, gens: Dict[str, Optional['Generation']]) -> List[Dict]:
@@ -1849,13 +1849,13 @@ from utils.epochs.generation import Generation  # noqa: F401  (type only)
 
 - [ ] **Step 5: Run the tests to verify they pass**
 
-Run: `python3 -m pytest test/test_epochs.py -q`
+Run: `python3 -m pytest tests/test_epochs.py -q`
 Expected: `60 passed`
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add utils/epochs/generation.py utils/epochs/reports.py test/test_epochs.py
+git add sim_epochs/generation.py sim_epochs/reports.py tests/test_epochs.py
 git commit -m "feat(epochs): generation from the cnf, cnf index, consistency report
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -1867,8 +1867,8 @@ Claude-Session: https://claude.ai/code/session_0115w5JympLoYF5uk2FkXiAC"
 ### Task 8: publish — Ray's catalog shape plus our fields
 
 **Files:**
-- Create: `utils/epochs/publish.py`
-- Modify: `test/test_epochs.py` (append)
+- Create: `sim_epochs/publish.py`
+- Modify: `tests/test_epochs.py` (append)
 
 **Interfaces:**
 - Consumes: `Catalog` with statuses, `gens`, `gaps`, `retire`.
@@ -1911,12 +1911,12 @@ class TestPublish(unittest.TestCase):
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `python3 -m pytest test/test_epochs.py -q -k TestPublish`
+Run: `python3 -m pytest tests/test_epochs.py -q -k TestPublish`
 Expected: FAIL with `ImportError` on `utils.epochs.publish`
 
 - [ ] **Step 3: Write the module**
 
-`utils/epochs/publish.py`:
+`sim_epochs/publish.py`:
 ```python
 """The file Ray's sim-epochs server reads: {"epochs":[{"name","datasets"}]}
 with our fields alongside (ADR 0004, decision 10). Recomputed every time;
@@ -1965,13 +1965,13 @@ def write_catalog(doc: dict, path: str) -> None:
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `python3 -m pytest test/test_epochs.py -q`
+Run: `python3 -m pytest tests/test_epochs.py -q`
 Expected: `62 passed`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add utils/epochs/publish.py test/test_epochs.py
+git add sim_epochs/publish.py tests/test_epochs.py
 git commit -m "feat(epochs): publish catalog in the sim-epochs server shape
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -1983,9 +1983,9 @@ Claude-Session: https://claude.ai/code/session_0115w5JympLoYF5uk2FkXiAC"
 ### Task 9: CLI and `bin/epochs`
 
 **Files:**
-- Create: `utils/epochs/cli.py`
+- Create: `sim_epochs/cli.py`
 - Create: `bin/epochs`
-- Modify: `test/test_epochs.py` (append)
+- Modify: `tests/test_epochs.py` (append)
 
 **Interfaces:**
 - Consumes: everything above.
@@ -2072,12 +2072,12 @@ class TestCli(unittest.TestCase):
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `python3 -m pytest test/test_epochs.py -q -k TestCli`
+Run: `python3 -m pytest tests/test_epochs.py -q -k TestCli`
 Expected: FAIL with `ImportError` on `utils.epochs.cli`
 
 - [ ] **Step 3: Write the CLI**
 
-`utils/epochs/cli.py`:
+`sim_epochs/cli.py`:
 ```python
 """bin/epochs — the sim-epochs catalog command. See EXAMPLES.md."""
 import argparse
@@ -2311,7 +2311,7 @@ def main(argv: Optional[List[str]] = None, source=None, now_fn=None) -> int:
 ```python
 #!/usr/bin/env python3
 """Sim-epochs catalog: derive dataset status from SAM, publish for the
-sim-epochs MCP server. Wrapper for utils/epochs/cli.py."""
+sim-epochs MCP server. Wrapper for sim_epochs/cli.py."""
 import os
 import sys
 
@@ -2327,18 +2327,18 @@ Then: `chmod +x bin/epochs`.
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `python3 -m pytest test/test_epochs.py -q`
+Run: `python3 -m pytest tests/test_epochs.py -q`
 Expected: `70 passed`
 
 - [ ] **Step 5: Run the whole suite once to check nothing else broke**
 
-Run: `python3 -m pytest test/test_unit.py test/test_epochs.py -q`
+Run: `python3 -m pytest test/test_unit.py tests/test_epochs.py -q`
 Expected: all pass (the count of `test_unit.py` is whatever it was before; no failures).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add utils/epochs/cli.py bin/epochs test/test_epochs.py
+git add sim_epochs/cli.py bin/epochs tests/test_epochs.py
 git commit -m "feat(epochs): bin/epochs CLI — propose, members, gaps, consistency, retire, lookup, index-cnfs, publish
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
@@ -2436,7 +2436,7 @@ Claude-Session: https://claude.ai/code/session_0115w5JympLoYF5uk2FkXiAC"
 
 **Files:**
 - Modify: `docs/EXAMPLES_schema.md` (add an `epochs` tool subsection to the Additional Tools list)
-- Modify: `wiki/pages/2026-09-02-sim-epochs-design.md` (section 13 phases: mark phase 1 done with the commit range; section 17 follow-ups: add unparseable/unclaimed/unlocatable findings from Task 11)
+- Modify: `docs/design.md` (section 13 phases: mark phase 1 done with the commit range; section 17 follow-ups: add unparseable/unclaimed/unlocatable findings from Task 11)
 - Modify: `docs/adr/0003-cnf-tarball-declared-as-sam-parent.md` (backfill sentence)
 - Modify: `CLAUDE.md` (one line under "Prodtools usage" listing `epochs` among the commands EXAMPLES.md covers)
 
@@ -2444,7 +2444,7 @@ Claude-Session: https://claude.ai/code/session_0115w5JympLoYF5uk2FkXiAC"
 
 Append to the Additional Tools list in `docs/EXAMPLES_schema.md`:
 ```markdown
-- `epochs` — sim-epochs catalog (`utils/epochs/cli.py`). Verbs: `propose
+- `epochs` — sim-epochs catalog (`sim_epochs/cli.py`). Verbs: `propose
   --family F` (write `data/epochs/<letters>.json` for every dig letter
   family lacking one), `members`, `gaps`, `consistency`, `retire`
   (purge_proposal lines), `lookup DATASET`, `index-cnfs`, `publish --out
@@ -2454,7 +2454,7 @@ Append to the Additional Tools list in `docs/EXAMPLES_schema.md`:
   timestamps are used anywhere; `-NNN` is a collision counter; renames
   across desc need an `exclude` pin with a reason; `propose` refuses to
   run without `--family`; exit 2 = a malformed epoch file, exit 3 = SAM
-  or name-parse error. Design: `wiki/pages/2026-09-02-sim-epochs-design.md`,
+  or name-parse error. Design: `docs/design.md`,
   glossary `CONTEXT.md`, ADRs 0003 and 0004.
 ```
 
@@ -2489,7 +2489,7 @@ Run `/refresh-examples epochs` (the skill regenerates the whole doc; review the 
 
 ```bash
 git add docs/EXAMPLES_schema.md EXAMPLES.md docs/adr/0003-cnf-tarball-declared-as-sam-parent.md \
-        wiki/pages/2026-09-02-sim-epochs-design.md CLAUDE.md
+        docs/design.md CLAUDE.md
 git commit -m "docs(epochs): EXAMPLES entry, ADR 0003 backfill wording, wiki phase-1 record
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
