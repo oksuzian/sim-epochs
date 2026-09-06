@@ -1732,6 +1732,38 @@ class TestLookupGeneration(unittest.TestCase):
         self.assertNotIn('generation', json.loads(out))
 
 
+class TestConsistencyText(unittest.TestCase):
+    """The desc column is never silently blank: minorities list their descs,
+    the largest group says it is the largest, ties say so."""
+
+    def test_largest_group_and_minority_rows(self):
+        from sim_epochs.cli import _consistency_lines
+        rows = [
+            {'family': 'Run1B', 'tier': 'mcs', 'count': 13, 'generation': 'SimJob/Run1Baq',
+             'descs': ['A'] * 13, 'minority': False},
+            {'family': 'Run1B', 'tier': 'mcs', 'count': 8, 'generation': 'SimJob/Run1Baf',
+             'descs': ['CeEndpointMixLow-KL', 'DIOtail0_60MixLow-KL'], 'minority': True},
+        ]
+        lines = _consistency_lines(rows)
+        self.assertTrue(lines[0].endswith('(largest group)'), lines[0])
+        self.assertTrue(lines[1].endswith('CeEndpointMixLow-KL, DIOtail0_60MixLow-KL'), lines[1])
+
+    def test_tied_largest_groups_say_so(self):
+        from sim_epochs.cli import _consistency_lines
+        rows = [
+            {'family': 'Run1B', 'tier': 'dig', 'count': 8, 'generation': 'SimJob/Run1Baf',
+             'descs': ['x'] * 8, 'minority': False},
+            {'family': 'Run1B', 'tier': 'dig', 'count': 8, 'generation': 'SimJob/Run1Bah',
+             'descs': ['y'] * 8, 'minority': False},
+            {'family': 'Run1B', 'tier': 'dig', 'count': 1, 'generation': 'SimJob/MDC2025av',
+             'descs': ['NoPrimaryMix1BB'], 'minority': True},
+        ]
+        lines = _consistency_lines(rows)
+        self.assertTrue(lines[0].endswith('(largest group, tied)'), lines[0])
+        self.assertTrue(lines[1].endswith('(largest group, tied)'), lines[1])
+        self.assertTrue(lines[2].endswith('NoPrimaryMix1BB'), lines[2])
+
+
 class TestGapsRule(unittest.TestCase):
     """ADR 0006: the newest name must be safe to use. A stale member in a
     current epoch is a rule violation, and `gaps` says so with exit 1."""

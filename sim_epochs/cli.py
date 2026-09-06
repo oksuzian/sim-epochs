@@ -318,12 +318,32 @@ def cmd_gaps(args, source):
     return 0
 
 
+def _consistency_lines(rows):
+    """Text rows. The desc column names the descs of a MINORITY generation
+    for its tier, so the reader sees who differs; the largest group says
+    so instead of listing everything (the JSON form lists every row's
+    descs). Several generations can tie for largest."""
+    largest = {}
+    for r in rows:
+        if not r['minority']:
+            largest[(r['family'], r['tier'])] = largest.get((r['family'], r['tier']), 0) + 1
+    out = []
+    for r in rows:
+        if r['minority']:
+            tail = ', '.join(r['descs'])
+        elif largest[(r['family'], r['tier'])] > 1:
+            tail = '(largest group, tied)'
+        else:
+            tail = '(largest group)'
+        out.append(f"{r['family']:<8} {r['tier']:<4} {r['count']:>4}  {r['generation']:<32}  {tail}")
+    return out
+
+
 def cmd_consistency(args, source):
     cat = _catalog(args, source)
     gens = generations(cat, source, _load_index(args.epochs_dir))
     rows = [r for r in consistency(cat, gens) if not args.family or r['family'] in args.family]
-    _emit(rows, args.json, lambda rs: [f"{r['family']:<8} {r['tier']:<4} {r['count']:>4}  {r['generation']:<32}"
-                                      + ('  ' + ', '.join(r['descs']) if r['minority'] else '') for r in rs])
+    _emit(rows, args.json, _consistency_lines)
     _report_noise(cat, source)
     return 0
 
