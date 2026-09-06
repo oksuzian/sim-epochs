@@ -1,4 +1,4 @@
-"""bin/epochs — the sim-epochs catalog command. See EXAMPLES.md.
+"""bin/epochs — the sim-epochs catalog command. See README.md.
 
 Every verb except `propose` loads EVERY epoch file. What it BUILDS is
 one of two things:
