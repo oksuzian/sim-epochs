@@ -93,22 +93,24 @@ $ bin/epochs lookup --family Run1B mcs.mu2e.CeEndpoint-KL.Run1Baw_best_v1_5.art
 
 Named `Run1Baw`, built with `Run1Baq`.
 
-Does the Musing alone fix the rest? Measured over every readable Run1B
-and MDC2025 cnf in the index (796 of 946), one Musing is one Offline
-version, and the field map was never overridden. Geometry and
-conditions are set per campaign entry, and they vary under one Musing:
+Does the name fix the rest? Measured over every readable Run1B and
+MDC2025 cnf in the index (796 of 946):
 
-| Musing | explicit geometries | explicit DbService |
-|---|---|---|
-| `SimJob/Run1Bai` | `geom_run1_b_v04`, `v05`, `v06` | `v1_4` |
-| `SimJob/Run1Bac` | `geom_run1_b_v01`, `v02` | — |
-| `SimJob/MDC2025av` | `geom_run1_a`, `geom_run1_b_v40` | `v1_5` |
-| `SimJob/MDC2025au` | `geom_run1_a` | `v1_1`, `v1_3`, `v1_5` |
-| `SimJob/Run1Ban` | `geom_run1_b_v40` | `v1_4`, `v1_5` |
+- **Offline version**: fixed by the Musing the name points at.
+- **Field map**: never overridden in any cnf. Musing default.
+- **Conditions**: the `_best_v1_5` tail is the DbService purpose and
+  version, and where both name and fcl set it they agree 336 times
+  out of 343. The 7 that disagree are all named `v1_3` and built
+  against `v1_1` (five MDC2025af cnfs, one MDC2025ar). The cnf read is
+  what finds them.
+- **Geometry**: not in any name, and it varies under one Musing.
+  `SimJob/Run1Bai` produced datasets on `geom_run1_b_v04`, `v05` and
+  `v06`; `SimJob/MDC2025av` on both `geom_run1_a` and
+  `geom_run1_b_v40`.
 
-So the name gives the Musing, the Musing gives the Offline version and
-the field map, and the geometry and DbService version still have to be
-read from the cnf. Across a whole family, per tier:
+So the name gives Musing, Offline, field and conditions; the cnf
+confirms the conditions and adds the geometry and the exact fcl.
+Across a whole family, per tier:
 
 ```
 $ bin/epochs consistency --family Run1B
