@@ -19,8 +19,8 @@ import re
 import tarfile
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
-from utils.epochs.graph import Catalog, Member
-from utils.job_common import Mu2eName
+from sim_epochs.graph import Catalog, Member
+from sim_epochs.mu2e import Mu2eName
 
 _SETUP_RE = re.compile(r'/Musings/([^/]+)/([^/]+)/setup\.sh$')
 _FCL_KEYS = {
@@ -68,7 +68,7 @@ def read_generation(cnf_path: str, cnf_name: str, source_kind: str) -> Generatio
     no embedded fcl at all — see Mu2eJobPars.recipe()), not an error:
     fcl_sha256 and the three fcl-derived fields come back '' rather than
     raising."""
-    from utils.jobquery import Mu2eJobPars
+    from sim_epochs.mu2e import Mu2eJobPars
     jp = Mu2eJobPars(cnf_path)
     setup = jp.setup()
     m = _SETUP_RE.search(setup or '')
@@ -134,7 +134,7 @@ def build_cnf_index(source, existing: Dict) -> Dict:
     assignment used to hand the dataset to the lexicographically LAST
     claimant and say nothing. The FIRST claim is kept and every later
     one is recorded under '__conflicts__' for the CLI to print."""
-    from utils.jobquery import Mu2eJobPars
+    from sim_epochs.mu2e import Mu2eJobPars
     idx = _empty_index()
     idx.update(existing or {})
     done = set(idx['__indexed__'])

@@ -10,7 +10,7 @@ import json
 import os
 from typing import Dict, List, NamedTuple
 
-from utils.epochs.dsconf import DsconfParseError, parse_dsconf
+from sim_epochs.dsconf import DsconfParseError, parse_dsconf
 
 EPOCH_STATUSES = ('current', 'frozen', 'retired')
 # The tiers `reports.gaps` expects under every dig, and therefore the only

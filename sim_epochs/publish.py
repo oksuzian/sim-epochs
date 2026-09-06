@@ -28,9 +28,9 @@ CONTEXT.md, "Input", and
 import json
 from typing import Dict
 
-from utils.epochs.graph import Catalog
-from utils.epochs.reports import count_warnings, gaps, incomplete_reasons, lookup, retire
-from utils.epochs.status import groups
+from sim_epochs.graph import Catalog
+from sim_epochs.reports import count_warnings, gaps, incomplete_reasons, lookup, retire
+from sim_epochs.status import groups
 
 
 def catalog_document(cat: Catalog, gens: Dict, generated_at: str) -> dict:

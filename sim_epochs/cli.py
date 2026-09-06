@@ -33,17 +33,17 @@ import sys
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
-from utils.epochs.dsconf import DsconfParseError, parse_dsconf
-from utils.epochs.epoch_files import (EpochFileError, load_epoch_files, propose_epoch,
+from sim_epochs.dsconf import DsconfParseError, parse_dsconf
+from sim_epochs.epoch_files import (EpochFileError, load_epoch_files, propose_epoch,
                                       write_epoch_file)
-from utils.epochs.generation import build_cnf_index, generations
-from utils.epochs.graph import build_catalog
-from utils.epochs.progress import Progress
-from utils.epochs.publish import catalog_document, write_catalog
-from utils.epochs.reports import consistency, count_warnings, gaps, lookup, purge_lines, retire
-from utils.epochs.status import assign_status
+from sim_epochs.generation import build_cnf_index, generations
+from sim_epochs.graph import build_catalog
+from sim_epochs.progress import Progress
+from sim_epochs.publish import catalog_document, write_catalog
+from sim_epochs.reports import consistency, count_warnings, gaps, lookup, purge_lines, retire
+from sim_epochs.status import assign_status
 
-REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_EPOCHS_DIR = os.path.join(REPO, 'data', 'epochs')
 INDEX_NAME = 'cnf_index.json'
 
@@ -53,12 +53,12 @@ def _now() -> str:
 
 
 def _source():
-    from utils.epochs.source import SamSource
+    from sim_epochs.source import SamSource
     return SamSource()
 
 
 def _sam_error_class():
-    """`samweb_client.Error`, the base every `utils.samweb_wrapper` method
+    """`samweb_client.Error`, the base every `sim_epochs.mu2e` method
     raises on an outage, an expired token or a malformed query (see its
     error-mode policy). It derives from neither ValueError nor OSError,
     so `except (ValueError, OSError)` let a SAM outage out as a traceback
@@ -160,7 +160,7 @@ def _progress(args):
     """Build progress for this invocation. `--quiet` turns it off
     outright; otherwise `Progress` decides from the stream, which means
     a TTY gets it and a redirected stderr does not. stdout is never
-    touched (see `utils/epochs/progress.py`)."""
+    touched (see `sim_epochs/progress.py`)."""
     if getattr(args, 'quiet', False):
         return Progress(enabled=False)
     return Progress()

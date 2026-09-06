@@ -1,4 +1,4 @@
-"""The only module in utils/epochs that talks to SAM.
+"""The only module in sim_epochs that talks to SAM.
 
 Dataset-level lineage uses SAM's `ischildof: (dh.dataset X)` and
 `isparentof: (dh.dataset X)` dimensions (verified 2026-09-03: one call
@@ -8,8 +8,8 @@ is testable without the Mu2e environment.
 """
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
-from utils.epochs.dsconf import DsconfParseError, parse_dsconf
-from utils.job_common import Mu2eName
+from sim_epochs.dsconf import DsconfParseError, parse_dsconf
+from sim_epochs.mu2e import Mu2eName
 
 DROP_TIERS = frozenset({'log', 'cnf', 'etc'})
 # The one tier the PARENTS path keeps despite DROP_TIERS: ADR 0003 makes
@@ -55,22 +55,22 @@ def group_files_to_datasets(filenames, keep_tiers=frozenset()) -> Tuple[Dict[str
 
 
 def _default_list_files(q):
-    from utils.samweb_wrapper import list_files
+    from sim_epochs.mu2e import list_files
     return list_files(q)
 
 
 def _default_count_files(q):
-    from utils.samweb_wrapper import count_files
+    from sim_epochs.mu2e import count_files
     return count_files(q)
 
 
 def _default_definitions(defname=None, user=None):
-    from utils.samweb_wrapper import definitions_matching
+    from sim_epochs.mu2e import definitions_matching
     return definitions_matching(defname=defname, user=user)
 
 
 def _default_locate(fn):
-    from utils.samweb_wrapper import locate_file
+    from sim_epochs.mu2e import locate_file
     return locate_file(fn)
 
 
@@ -168,5 +168,5 @@ class SamSource:
         loc = self._locate(filename)
         if not loc:
             return ''
-        from utils.file_resolver import path_from_sam_location
+        from sim_epochs.mu2e import path_from_sam_location
         return path_from_sam_location(filename, loc)

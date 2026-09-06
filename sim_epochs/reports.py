@@ -9,10 +9,10 @@ and `docs/adr/0005-input-retirement-proves-deadness-positively.md`.
 """
 from typing import Dict, List, Optional
 
-from utils.epochs.epoch_files import GAP_TIERS
-from utils.epochs.generation import Generation  # noqa: F401  (type only)
-from utils.epochs.graph import Catalog, Member
-from utils.epochs.status import GroupKey, group_keys_of, groups
+from sim_epochs.epoch_files import GAP_TIERS
+from sim_epochs.generation import Generation  # noqa: F401  (type only)
+from sim_epochs.graph import Catalog, Member
+from sim_epochs.status import GroupKey, group_keys_of, groups
 
 Grouped = Dict[GroupKey, List[Member]]
 

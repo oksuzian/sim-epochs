@@ -16,7 +16,7 @@ parent's status is final before its children are judged.
 """
 from typing import Dict, List, Optional, Tuple
 
-from utils.epochs.graph import Catalog, Member
+from sim_epochs.graph import Catalog, Member
 
 STATUSES = ('current', 'stale', 'superseded')
 GroupKey = Tuple[str, str, str, Optional[str]]

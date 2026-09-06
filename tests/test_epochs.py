@@ -1,4 +1,4 @@
-"""Tests for utils/epochs: sim-epochs catalog. Runs standalone (samweb stubbed)."""
+"""Tests for sim_epochs: sim-epochs catalog. Runs standalone (samweb stubbed)."""
 import json
 import os
 import sys
@@ -11,13 +11,13 @@ for _mod in ('samweb_client', 'ifdh'):
     if _mod not in sys.modules:
         sys.modules[_mod] = MagicMock()
 
-from utils.epochs.dsconf import DsconfKey, DsconfParseError, parse_dsconf, family_of
+from sim_epochs.dsconf import DsconfKey, DsconfParseError, parse_dsconf, family_of
 
-from utils.epochs.epoch_files import (EpochFile, EpochFileError, load_epoch_files,
+from sim_epochs.epoch_files import (EpochFile, EpochFileError, load_epoch_files,
                                       propose_epoch, write_epoch_file, EPOCH_STATUSES)
 
-from utils.epochs.graph import build_catalog, root_matches, Member, Catalog
-from utils.epochs.status import assign_status, group_key, groups, STATUSES
+from sim_epochs.graph import build_catalog, root_matches, Member, Catalog
+from sim_epochs.status import assign_status, group_key, groups, STATUSES
 
 
 def _tmpdir():
@@ -172,7 +172,7 @@ class TestEpochFiles(unittest.TestCase):
         self.assertEqual(load_epoch_files(os.path.join(_tmpdir(), 'nope')), {})
 
 
-from utils.epochs.source import (group_files_to_datasets, SamSource, DROP_TIERS,
+from sim_epochs.source import (group_files_to_datasets, SamSource, DROP_TIERS,
                                  PARENT_KEEP_TIERS)
 
 
@@ -368,7 +368,7 @@ AN = 'MDC2025an_best_v1_1'
 
 
 def _epoch(name, roots=None, status='current', pins=None):
-    from utils.epochs.dsconf import family_of
+    from sim_epochs.dsconf import family_of
     p = {k: [] for k in ('exclude', 'hold', 'not_expected', 'order', 'notes')}
     p.update(pins or {})
     return EpochFile(name=name, family=family_of(name + '_best_v1_0'), purpose='',
@@ -447,7 +447,7 @@ class TestBuildCatalog(unittest.TestCase):
         # replaced and its accumulated parents thrown away. _walk_down
         # guards with cat.members.get(); the dig loop now does too.
         from unittest.mock import patch
-        import utils.epochs.graph as graph_mod
+        import sim_epochs.graph as graph_mod
         g = _small_graph()
         upper = f'dig.mu2e.Aupper.{AU}.art'   # sorts BEFORE the dig it feeds
         lower = f'dig.mu2e.CeEndpointOnSpill.{AU}.art'
@@ -551,7 +551,7 @@ class TestBuildCatalog(unittest.TestCase):
         # walk cannot see it and everything below it is simply unreached
         # -- plain FakeSource hands foreign nodes back happily, which is
         # why OwnerPolicyFakeSource (defined above) exists.
-        from utils.epochs.publish import catalog_document
+        from sim_epochs.publish import catalog_document
         g = _small_graph()
         foreign = f'nts.oksuzian.Private.{AU}.root'
         g[f'mcs.mu2e.CeEndpointOnSpill.{AU}.art']['children'].append(foreign)
@@ -762,7 +762,7 @@ class TestStatus(unittest.TestCase):
         # own terms whatever the caller hands it -- hence the check pins
         # the function's contract rather than the current invariant.
         from unittest.mock import patch
-        from utils.epochs import status as status_mod
+        from sim_epochs import status as status_mod
         base = ('MDC2025', 'nts', 'CeEndpointOnSpill')
         cat = _cat()
         m = cat.members[f'nts.mu2e.CeEndpointOnSpill.{AU}.root']
@@ -779,7 +779,7 @@ class TestStatus(unittest.TestCase):
         self.assertIn(('MDC2025', 'nts', 'CeEndpointOnSpill', 'best'), groups(cat))
 
 
-from utils.epochs.reports import gaps, retire, purge_lines, lookup, EXPECTED_TIERS
+from sim_epochs.reports import gaps, retire, purge_lines, lookup, EXPECTED_TIERS
 
 
 class TestGaps(unittest.TestCase):
@@ -977,7 +977,7 @@ class TestLookup(unittest.TestCase):
         self.assertEqual(lookup(cat, 'dts.mu2e.CeEndpoint.MDC2025ap.art')['kind'], 'unknown')
 
 
-from utils.epochs.reports import count_warnings
+from sim_epochs.reports import count_warnings
 
 
 class TestCountWarnings(unittest.TestCase):
@@ -1010,9 +1010,9 @@ class TestCountWarnings(unittest.TestCase):
 
 import hashlib
 import tarfile
-from utils.epochs.generation import (Generation, read_generation, build_cnf_index, cnf_for,
+from sim_epochs.generation import (Generation, read_generation, build_cnf_index, cnf_for,
                                      generations)
-from utils.epochs.reports import consistency
+from sim_epochs.reports import consistency
 
 
 def _make_cnf(d, name, setup, outputs, fcl='services.DbService.version: "v1_5"\n'
@@ -1250,7 +1250,7 @@ class TestGeneration(unittest.TestCase):
         self.assertEqual(via_index.source, 'index')
 
 
-from utils.epochs.generation import GENERATION_FAMILIES
+from sim_epochs.generation import GENERATION_FAMILIES
 
 BA = 'MDC2020ba_best_v1_3'          # an out-of-scope (legacy) family
 
@@ -1395,7 +1395,7 @@ class TestGenerationScope(unittest.TestCase):
         self.assertEqual(first, second)
 
 
-from utils.epochs.publish import catalog_document, write_catalog
+from sim_epochs.publish import catalog_document, write_catalog
 
 
 class TestPublish(unittest.TestCase):
@@ -1472,9 +1472,9 @@ class TestGroupingIsComputedOnce(unittest.TestCase):
     count, and that the answer is the same either way."""
 
     def _count(self, fn):
-        import utils.epochs.publish as publish_mod
-        import utils.epochs.reports as reports_mod
-        import utils.epochs.status as status_mod
+        import sim_epochs.publish as publish_mod
+        import sim_epochs.reports as reports_mod
+        import sim_epochs.status as status_mod
         mods = (publish_mod, reports_mod, status_mod)
         calls = []
         real = status_mod.groups
@@ -1557,8 +1557,8 @@ class TestGroupingIsComputedOnce(unittest.TestCase):
 
 import io
 import contextlib
-from utils.epochs import cli as epochs_cli
-from utils.epochs.progress import Progress
+from sim_epochs import cli as epochs_cli
+from sim_epochs.progress import Progress
 
 
 class _Tty(io.StringIO):
@@ -1904,7 +1904,7 @@ class TestCli(unittest.TestCase):
         # catch would turn a programming error in the catalog code into a
         # tidy exit 3 instead of a traceback.
         import samweb_client
-        from utils.epochs.cli import _sam_error_class
+        from sim_epochs.cli import _sam_error_class
 
         previous = samweb_client.Error
         try:

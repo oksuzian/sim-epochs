@@ -21,10 +21,10 @@ import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-from utils.epochs.dsconf import DsconfKey, DsconfParseError, parse_dsconf
-from utils.epochs.epoch_files import EpochFile
-from utils.epochs.progress import Progress
-from utils.job_common import Mu2eName
+from sim_epochs.dsconf import DsconfKey, DsconfParseError, parse_dsconf
+from sim_epochs.epoch_files import EpochFile
+from sim_epochs.progress import Progress
+from sim_epochs.mu2e import Mu2eName
 
 
 def root_matches(root: str, dataset: str) -> bool:
