@@ -229,32 +229,38 @@ def generations(cat: Catalog, source, index: Dict) -> Dict[str, Optional[Generat
     for m in cat.members.values():
         if m.status not in ('current', 'stale'):
             continue
-        if m.key.family not in GENERATION_FAMILIES:
-            cat.generation_out_of_scope.add(m.key.family)
-            out[m.name] = None
-            continue
-        found = cnf_for(m, cat, index)
-        if found is None:
-            cat.generation_unresolved.add(m.name)
-            out[m.name] = None
-            continue
-        cnf, kind = found
-        if cnf in cache:
-            out[m.name] = cache[cnf]._replace(source=kind)
-            continue
-        if cnf in cat.generation_unreadable or cnf in cat.generation_unlocatable:
-            out[m.name] = None          # already diagnosed; do not re-probe
-            continue
-        path = source.local_path(cnf)
-        if not path:
-            cat.generation_unlocatable.add(cnf)
-            out[m.name] = None
-            continue
-        try:
-            cache[cnf] = read_generation(path, cnf, kind)
-        except (tarfile.ReadError, OSError, ValueError, json.JSONDecodeError) as exc:
-            cat.generation_unreadable[cnf] = f'{type(exc).__name__}: {exc}'
-            out[m.name] = None
-            continue
-        out[m.name] = cache[cnf]._replace(source=kind)
+        out[m.name], _ = generation_of(m, cat, source, index, cache)
     return out
+
+
+def generation_of(m: Member, cat: Catalog, source, index: Dict,
+                  cache: Dict[str, Generation]) -> Tuple[Optional[Generation], Optional[str]]:
+    """One member's generation, or (None, why). The single home of the
+    routes and guards `generations()` applies to every live member;
+    `lookup` calls it for one. Every blank names its reason, and the
+    reason is also recorded on the catalog under its kind."""
+    if m.key.family not in GENERATION_FAMILIES:
+        cat.generation_out_of_scope.add(m.key.family)
+        return None, (f'not evaluated for {m.key.family}: cnfs of that era are '
+                      f'per-job .fcl files, not jobdef tarballs')
+    found = cnf_for(m, cat, index)
+    if found is None:
+        cat.generation_unresolved.add(m.name)
+        return None, 'no cnf in SAM claims this dataset'
+    cnf, kind = found
+    if cnf in cache:
+        return cache[cnf]._replace(source=kind), None
+    if cnf in cat.generation_unlocatable:
+        return None, f'cnf {cnf} has no SAM location'
+    if cnf in cat.generation_unreadable:
+        return None, f'cnf {cnf} could not be read: {cat.generation_unreadable[cnf]}'
+    path = source.local_path(cnf)
+    if not path:
+        cat.generation_unlocatable.add(cnf)
+        return None, f'cnf {cnf} has no SAM location'
+    try:
+        cache[cnf] = read_generation(path, cnf, kind)
+    except (tarfile.ReadError, OSError, ValueError, json.JSONDecodeError) as exc:
+        cat.generation_unreadable[cnf] = f'{type(exc).__name__}: {exc}'
+        return None, f'cnf {cnf} could not be read: {cat.generation_unreadable[cnf]}'
+    return cache[cnf]._replace(source=kind), None

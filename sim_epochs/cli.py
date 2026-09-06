@@ -36,7 +36,7 @@ from typing import Dict, List, Optional
 from sim_epochs.dsconf import DsconfParseError, parse_dsconf
 from sim_epochs.epoch_files import (EpochFileError, load_epoch_files, propose_epoch,
                                       write_epoch_file)
-from sim_epochs.generation import build_cnf_index, generations
+from sim_epochs.generation import generation_of, build_cnf_index, generations
 from sim_epochs.graph import build_catalog
 from sim_epochs.progress import Progress
 from sim_epochs.publish import catalog_document, write_catalog
@@ -337,8 +337,17 @@ def cmd_retire(args, source):
 
 
 def cmd_lookup(args, source):
+    """One dataset: epoch, status, parents, children, and what made it.
+    `generation` is the cnf's answer or null; `generation_reason` says
+    why it is null (era out of scope, no cnf claims it, no location,
+    unreadable) so a blank is never silent."""
     cat = _catalog(args, source)
     info = lookup(cat, args.dataset)
+    if info['kind'] == 'member':
+        gen, reason = generation_of(cat.members[args.dataset], cat, source,
+                                    _load_index(args.epochs_dir), {})
+        info['generation'] = dict(gen._asdict(), label=gen.label()) if gen else None
+        info['generation_reason'] = reason
     print(json.dumps(info, indent=1))
     return 0 if info['kind'] != 'unknown' else 1
 

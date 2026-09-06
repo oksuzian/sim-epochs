@@ -1673,6 +1673,65 @@ class TestDefaultRoots(unittest.TestCase):
         self.assertEqual(load_epoch_files(d)['MDC2025au'].roots, default_roots('MDC2025au'))
 
 
+class TestLookupGeneration(unittest.TestCase):
+    """`lookup` carries the generation, or the reason it is blank."""
+
+    def setUp(self):
+        self.d = _tmpdir()
+        for name in ('MDC2025au', 'MDC2025an'):
+            write_epoch_file(self.d, propose_epoch(name + '_best_v1_0'))
+
+    def _lookup(self, src, name, family='MDC2025'):
+        rc, out, err = _run(['lookup', '--family', family, name], src, self.d)
+        self.assertEqual(rc, 0, err)
+        return json.loads(out)
+
+    def test_member_with_a_cnf_reports_its_generation(self):
+        cnf = 'cnf.mu2e.evnt.MDC2025au_best_v1_5-001.0.tar'
+        path = _make_cnf(_tmpdir(), cnf, SETUP_A,
+                         ['nts.mu2e.{desc}.MDC2025au_best_v1_5-001.sequencer.root'])
+        g = _small_graph()
+        g[cnf] = {'n': 1, 'children': [f'nts.mu2e.CeEndpointOnSpill.{AU}-001.root']}
+        info = self._lookup(FakeSource(g, cnfs={cnf: path}), f'nts.mu2e.CeEndpointOnSpill.{AU}-001.root')
+        self.assertIsNone(info['generation_reason'])
+        gen = info['generation']
+        self.assertEqual(gen['cnf'], cnf)
+        self.assertEqual(gen['source'], 'parent')
+        self.assertEqual(gen['label'], f"{gen['musing']}/{gen['version']}")
+        self.assertIn('dbservice', gen)
+
+    def test_member_without_a_cnf_says_so(self):
+        info = self._lookup(FakeSource(_small_graph()), f'nts.mu2e.CeEndpointOnSpill.{AU}-001.root')
+        self.assertIsNone(info['generation'])
+        self.assertEqual(info['generation_reason'], 'no cnf in SAM claims this dataset')
+
+    def test_unreadable_cnf_is_a_reason_not_a_crash(self):
+        cnf = 'cnf.mu2e.evnt.MDC2025au_best_v1_5-001.0.tar'
+        bad = os.path.join(_tmpdir(), cnf)
+        with open(bad, 'w') as f:
+            f.write('not a tarball')
+        g = _small_graph()
+        g[cnf] = {'n': 1, 'children': [f'nts.mu2e.CeEndpointOnSpill.{AU}-001.root']}
+        info = self._lookup(FakeSource(g, cnfs={cnf: bad}), f'nts.mu2e.CeEndpointOnSpill.{AU}-001.root')
+        self.assertIsNone(info['generation'])
+        self.assertIn('could not be read', info['generation_reason'])
+
+    def test_out_of_scope_family_is_not_evaluated(self):
+        d = _tmpdir()
+        write_epoch_file(d, propose_epoch(BA))
+        g = {f'dig.mu2e.X.{BA}.art': {'n': 5, 'children': []}}
+        rc, out, err = _run(['lookup', '--family', 'MDC2020', f'dig.mu2e.X.{BA}.art'], FakeSource(g), d)
+        self.assertEqual(rc, 0, err)
+        info = json.loads(out)
+        self.assertIsNone(info['generation'])
+        self.assertTrue(info['generation_reason'].startswith('not evaluated for MDC2020'))
+
+    def test_unknown_dataset_has_no_generation_keys(self):
+        rc, out, _ = _run(['lookup', 'nope.mu2e.a.b.art'], FakeSource(_small_graph()), self.d)
+        self.assertEqual(rc, 1)
+        self.assertNotIn('generation', json.loads(out))
+
+
 class TestGapsRule(unittest.TestCase):
     """ADR 0006: the newest name must be safe to use. A stale member in a
     current epoch is a rule violation, and `gaps` says so with exit 1."""
