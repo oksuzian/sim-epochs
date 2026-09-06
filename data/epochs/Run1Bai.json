@@ -1,17 +1,5 @@
 {
   "name": "Run1Bai",
   "purpose": "SimJob/Run1Bai, Offline v13_05_10",
-  "status": "frozen",
-  "roots": [
-    "dig.mu2e.%.Run1Bai.art",
-    "dig.mu2e.%.Run1Bai_%.art",
-    "dig.mu2e.%.Run1Bai-%.art"
-  ],
-  "pins": {
-    "exclude": [],
-    "hold": [],
-    "not_expected": [],
-    "order": [],
-    "notes": []
-  }
+  "status": "frozen"
 }

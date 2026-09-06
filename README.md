@@ -118,16 +118,19 @@ One per digitization campaign:
 {
   "name": "Run1Ban",
   "purpose": "SimJob/Run1Ban, Offline v13_17_10",
-  "status": "frozen",
-  "roots": ["dig.mu2e.%.Run1Ban.art", "dig.mu2e.%.Run1Ban_%.art", "dig.mu2e.%.Run1Ban-%.art"],
-  "pins": {"exclude": [], "hold": [], "not_expected": [], "order": [], "notes": []}
+  "status": "frozen"
 }
 ```
 
 `status` is the epoch's standing: `current` (being worked on),
 `frozen` (a hold on every member, nothing expected to change),
-`retired` (every member a delete candidate). Pins are the only other
-curated input, each with a reason.
+`retired` (every member a delete candidate). `roots` is optional: absent means the three dig patterns
+derived from the name — `dig.mu2e.%.Run1Ban.art`,
+`dig.mu2e.%.Run1Ban_%.art`, `dig.mu2e.%.Run1Ban-%.art` — which claim
+the bare, versioned and collision-suffixed dsconfs without swallowing
+the next revision (`Run1Ban2`). Write `roots` only when that default is
+wrong. `pins` (`exclude`, `hold`, `not_expected`, `order`, `notes`) is
+likewise optional and hand-written, each entry with a reason.
 
 ## Layout
 

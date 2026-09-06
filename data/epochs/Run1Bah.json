@@ -1,17 +1,5 @@
 {
   "name": "Run1Bah",
   "purpose": "SimJob/Run1Bah, Offline v13_02_01",
-  "status": "frozen",
-  "roots": [
-    "dig.mu2e.%.Run1Bah.art",
-    "dig.mu2e.%.Run1Bah_%.art",
-    "dig.mu2e.%.Run1Bah-%.art"
-  ],
-  "pins": {
-    "exclude": [],
-    "hold": [],
-    "not_expected": [],
-    "order": [],
-    "notes": []
-  }
+  "status": "frozen"
 }

@@ -32,6 +32,22 @@ class EpochFileError(ValueError):
     """A curated epoch file is malformed. Name the file and the field."""
 
 
+def default_roots(name: str) -> List[str]:
+    """The three dig patterns every campaign gets from its name alone.
+
+    Three, not one: a `_%` tail alone misses a bare-dsconf dig
+    (`dig.mu2e.<desc>.MDC2020aq.art`, a live SAM finding); a single `%`
+    in place of the tail would swallow the next revision's digs
+    (`MDC2020aq2_best_v1_3` starts with `MDC2020aq`), which must stay
+    its own epoch; `-%` claims a collision-suffixed bare dsconf
+    (`MDC2020aq-001`). `%` is the only wildcard, so "next character is
+    `.`, `_` or `-`" cannot be one pattern. A file names `roots` only
+    when this default is wrong for it."""
+    return [f'dig.mu2e.%.{name}.art',
+            f'dig.mu2e.%.{name}_%.art',
+            f'dig.mu2e.%.{name}-%.art']
+
+
 class EpochFile(NamedTuple):
     name: str
     family: str
@@ -79,7 +95,7 @@ def _parse_one(path) -> EpochFile:
     with open(path) as f:
         data = json.load(f)
     stem = os.path.splitext(os.path.basename(path))[0]
-    for field in ('name', 'purpose', 'status', 'roots'):
+    for field in ('name', 'purpose', 'status'):
         if field not in data:
             raise EpochFileError(f'{path}: missing {field!r}')
     if data['name'] != stem:
@@ -92,12 +108,17 @@ def _parse_one(path) -> EpochFile:
         raise EpochFileError(f'{path}: epoch name needs campaign letters: {data["name"]!r}')
     if data['status'] not in EPOCH_STATUSES:
         raise EpochFileError(f'{path}: status must be one of {EPOCH_STATUSES}, got {data["status"]!r}')
-    if not isinstance(data['roots'], list) or not data['roots']:
-        raise EpochFileError(f'{path}: roots must be a non-empty list')
-    for r in data['roots']:
-        _check_root(path, r)
+    if 'roots' in data:
+        if not isinstance(data['roots'], list) or not data['roots']:
+            raise EpochFileError(f'{path}: roots, when given, must be a non-empty list '
+                                 f'(omit the key for the default three)')
+        for r in data['roots']:
+            _check_root(path, r)
+        roots = list(data['roots'])
+    else:
+        roots = default_roots(data['name'])
     return EpochFile(name=data['name'], family=key.family, purpose=data['purpose'],
-                     status=data['status'], roots=list(data['roots']),
+                     status=data['status'], roots=roots,
                      pins=_check_pins(path, data.get('pins')))
 
 
@@ -116,29 +137,15 @@ def load_epoch_files(dirpath: str) -> Dict[str, EpochFile]:
 
 
 def propose_epoch(sample_dsconf: str) -> dict:
-    """The file a new letter family gets before a person touches it.
-
-    Three roots, not one: a `_%` tail alone misses a bare-dsconf dig
-    (`dig.mu2e.<desc>.MDC2020aq.art` — no `_purpose_vN_M` tail, a live
-    SAM finding), so we add a bare root for it. A single `%` in place
-    of the tail would also swallow the next revision's digs
-    (`MDC2020aq2_best_v1_3` starts with `MDC2020aq`), which must stay
-    its own epoch, so bare and tail stay two separate patterns rather
-    than one loosened glob. The `-%` root claims a collision-suffixed
-    bare dsconf (`MDC2020aq-001`) the same way."""
+    """The file a new letter family gets before a person touches it. No
+    `roots` key (the loader derives `default_roots(name)`; see there for
+    why it is three patterns) and no `pins` key (absent means none; a
+    pin is added by hand, with its reason)."""
     key = parse_dsconf(sample_dsconf)
     if not key.letters:
         raise EpochFileError(f'cannot propose an epoch from {sample_dsconf!r}: no letters')
     name = f'{key.family}{key.letters}{key.rev or ""}'
-    return {
-        'name': name,
-        'purpose': '',
-        'status': 'current',
-        'roots': [f'dig.mu2e.%.{name}.art',
-                  f'dig.mu2e.%.{name}_%.art',
-                  f'dig.mu2e.%.{name}-%.art'],
-        'pins': {k: [] for k in PIN_KINDS},
-    }
+    return {'name': name, 'purpose': '', 'status': 'current'}
 
 
 def write_epoch_file(dirpath: str, data: dict) -> str:

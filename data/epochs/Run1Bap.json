@@ -1,17 +1,5 @@
 {
   "name": "Run1Bap",
   "purpose": "SimJob/Run1Bap, Offline v13_32_10",
-  "status": "frozen",
-  "roots": [
-    "dig.mu2e.%.Run1Bap.art",
-    "dig.mu2e.%.Run1Bap_%.art",
-    "dig.mu2e.%.Run1Bap-%.art"
-  ],
-  "pins": {
-    "exclude": [],
-    "hold": [],
-    "not_expected": [],
-    "order": [],
-    "notes": []
-  }
+  "status": "frozen"
 }

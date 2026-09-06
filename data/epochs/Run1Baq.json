@@ -1,17 +1,5 @@
 {
   "name": "Run1Baq",
   "purpose": "SimJob/Run1Baq, Offline v13_34_10",
-  "status": "frozen",
-  "roots": [
-    "dig.mu2e.%.Run1Baq.art",
-    "dig.mu2e.%.Run1Baq_%.art",
-    "dig.mu2e.%.Run1Baq-%.art"
-  ],
-  "pins": {
-    "exclude": [],
-    "hold": [],
-    "not_expected": [],
-    "order": [],
-    "notes": []
-  }
+  "status": "frozen"
 }

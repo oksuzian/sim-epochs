@@ -135,7 +135,9 @@ _Avoid_: generation, version, campaign, "the latest datasets".
 A dataset pattern, by convention at the `dig` tier with the conditions
 version wildcarded, that a human writes to define an Epoch. A dataset
 matching a Root belongs to that Epoch; so does everything downstream of
-it by parentage. Roots are the only curated part of an Epoch.
+it by parentage. Roots default to three patterns derived from the Epoch's name (bare
+dsconf, `_purpose_vN_M` tail, `-NNN` suffix); a person writes them only
+when that default is wrong. They are the only curated part of an Epoch.
 
 ## Input (of an Epoch)
 

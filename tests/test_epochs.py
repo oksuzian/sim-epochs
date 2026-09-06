@@ -13,7 +13,7 @@ for _mod in ('samweb_client', 'ifdh'):
 
 from sim_epochs.dsconf import DsconfKey, DsconfParseError, parse_dsconf, family_of
 
-from sim_epochs.epoch_files import (EpochFile, EpochFileError, load_epoch_files,
+from sim_epochs.epoch_files import (EpochFile, EpochFileError, load_epoch_files, default_roots, PIN_KINDS,
                                       propose_epoch, write_epoch_file, EPOCH_STATUSES)
 
 from sim_epochs.graph import build_catalog, root_matches, Member, Catalog
@@ -151,9 +151,7 @@ class TestEpochFiles(unittest.TestCase):
     def test_propose_from_sample_dsconf(self):
         data = propose_epoch('MDC2025au_best_v1_5')
         self.assertEqual(data['name'], 'MDC2025au')
-        self.assertEqual(data['roots'], ['dig.mu2e.%.MDC2025au.art',
-                                         'dig.mu2e.%.MDC2025au_%.art',
-                                         'dig.mu2e.%.MDC2025au-%.art'])
+        self.assertNotIn('roots', data)          # the loader derives the default three
         self.assertEqual(data['status'], 'current')
         self.assertEqual(data['purpose'], '')
         d = _tmpdir()
@@ -1624,6 +1622,55 @@ class TestMembersOrder(unittest.TestCase):
         tiers = [line.split()[1] for line in out.splitlines()]
         self.assertEqual(tiers[-1], 'zzz', out)
         self.assertEqual(tiers[:-1], sorted(tiers[:-1], key=lambda t: epochs_cli.TIER_RANK[t]))
+
+
+class TestDefaultRoots(unittest.TestCase):
+    """`roots` is optional: absent means the three patterns derived from
+    the name; present means exactly what is written."""
+
+    def _write(self, d, body):
+        with open(os.path.join(d, body['name'] + '.json'), 'w') as f:
+            json.dump(body, f)
+
+    def test_absent_roots_are_the_three_derived_patterns(self):
+        d = _tmpdir()
+        self._write(d, {'name': 'MDC2025au', 'purpose': '', 'status': 'current'})
+        e = load_epoch_files(d)['MDC2025au']
+        self.assertEqual(e.roots, ['dig.mu2e.%.MDC2025au.art',
+                                   'dig.mu2e.%.MDC2025au_%.art',
+                                   'dig.mu2e.%.MDC2025au-%.art'])
+
+    def test_default_roots_do_not_claim_the_next_revision(self):
+        d = _tmpdir()
+        self._write(d, {'name': 'MDC2025au', 'purpose': '', 'status': 'current'})
+        e = load_epoch_files(d)['MDC2025au']
+        self.assertTrue(any(root_matches(r, f'dig.mu2e.X.{AU}.art') for r in e.roots))
+        self.assertTrue(any(root_matches(r, 'dig.mu2e.X.MDC2025au.art') for r in e.roots))
+        self.assertTrue(any(root_matches(r, 'dig.mu2e.X.MDC2025au-001.art') for r in e.roots))
+        self.assertFalse(any(root_matches(r, 'dig.mu2e.X.MDC2025au2_best_v1_3.art') for r in e.roots))
+
+    def test_explicit_roots_win(self):
+        d = _tmpdir()
+        self._write(d, {'name': 'MDC2025au', 'purpose': '', 'status': 'current',
+                        'roots': ['dig.mu2e.CeEndpoint%.MDC2025au_%.art']})
+        self.assertEqual(load_epoch_files(d)['MDC2025au'].roots,
+                         ['dig.mu2e.CeEndpoint%.MDC2025au_%.art'])
+
+    def test_empty_roots_list_is_still_refused(self):
+        d = _tmpdir()
+        self._write(d, {'name': 'MDC2025au', 'purpose': '', 'status': 'current', 'roots': []})
+        with self.assertRaises(EpochFileError) as ctx:
+            load_epoch_files(d)
+        self.assertIn('omit the key', str(ctx.exception))
+
+    def test_proposed_file_round_trips_to_the_default(self):
+        d = _tmpdir()
+        write_epoch_file(d, propose_epoch('MDC2025au_best_v1_5'))
+        with open(os.path.join(d, 'MDC2025au.json')) as f:
+            body = json.load(f)
+        self.assertEqual(sorted(body), ['name', 'purpose', 'status'])
+        self.assertEqual(load_epoch_files(d)['MDC2025au'].pins, {k: [] for k in PIN_KINDS})
+        self.assertEqual(load_epoch_files(d)['MDC2025au'].roots, default_roots('MDC2025au'))
 
 
 class TestGapsRule(unittest.TestCase):
