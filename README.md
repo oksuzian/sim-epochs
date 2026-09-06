@@ -103,13 +103,21 @@ MDC2025 cnf in the index (796 of 946):
   out of 343. The 7 that disagree are all named `v1_3` and built
   against `v1_1` (five MDC2025af cnfs, one MDC2025ar). The cnf read is
   what finds them.
-- **Geometry**: not in any name, and it varies under one Musing.
-  `SimJob/Run1Bai` produced datasets on `geom_run1_b_v04`, `v05` and
-  `v06`; `SimJob/MDC2025av` on both `geom_run1_a` and
-  `geom_run1_b_v40`.
+- **Geometry**: fixed per campaign, and the name identifies the
+  campaign. Every current dig of an epoch sits on one geometry file
+  (Run1Baf `v01`, Run1Bah `v03`, Run1Ban through Run1Baw `v40`). It
+  varies only under one *Musing*: `SimJob/Run1Bai` was used for three
+  pileup iterations, `-001` on `v04`, `-002` on `v05`, `-003` on `v06`,
+  the first two now superseded; `SimJob/MDC2025av` served both the
+  MDC2025av primaries (`geom_run1_a`) and the Run1Bav digs (`v40`).
+  The dsconf tells them apart, the Musing does not.
 
-So the name gives Musing, Offline, field and conditions; the cnf
-confirms the conditions and adds the geometry and the exact fcl.
+So the name fixes what made a dataset, through the campaign it names.
+The cnf is the record that lets the tool check the claim, and it adds
+the exact fcl. Everything the tool found wrong so far — the 13 recos
+named `Run1Baw` on `Run1Baq`, the 7 datasets named `v1_3` on `v1_1` —
+came from that check.
+
 Across a whole family, per tier:
 
 ```
