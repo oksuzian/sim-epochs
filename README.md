@@ -1,14 +1,140 @@
 # sim-epochs
 
-The Mu2e simulation-epochs catalog. It answers, from SAM parentage and
-on every run: which simulation datasets exist, which one to use, what
-each was made with, and what can be retired together. A person supplies
-only what a machine cannot know: one small JSON per digitization
-campaign with a name, a purpose, a standing and the root patterns.
-Nothing derived is ever stored.
+Mu2e has hundreds of simulation datasets. Nobody can say from the names
+alone which ones to use, which ones are old copies, and which ones can
+be deleted. Three hand-written lists try to say it, and they disagree.
+
+Epochs answers those three questions automatically, from the file
+catalog, every time it runs. The only thing a person writes is one tiny
+file per digitization campaign: its name, what it was for, and whether
+it is still in use. Nothing derived is ever stored, so nothing goes
+stale.
 
 Design: `docs/design.md`. Glossary: `CONTEXT.md`. Decisions:
 `docs/adr/`. Cut from `Mu2e/prodtools` on 2026-09-05 with its history.
+
+## The three questions
+
+All examples below are real output from production SAM, 2026-09-05.
+Set up once: `source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh
+&& muse setup ops`. `--family` keeps each run to about 40 seconds.
+
+### 1. Which one do I use?
+
+For every kind of dataset the tool finds all the versions, picks the
+newest name, and checks that the thing it was made from is also the
+newest. `current`: use it. `stale`: still use it, a remake is owed.
+`superseded`: a newer version exists, do not use it.
+
+```
+$ bin/epochs members --family Run1B --status current
+current    dig  Run1Ban        19 dig.mu2e.CeEndpoint.Run1Ban_best_v1_4-000.art  [hold: epoch Run1Ban is frozen]
+current    dig  Run1Ban      1999 dig.mu2e.CeEndpointMix1BB.Run1Ban_best_v1_4-000.art  [hold: epoch Run1Ban is frozen]
+current    dig  Run1Baf      1999 dig.mu2e.CeEndpointMixLow.Run1Baf_best_v1_4-000.art  [hold: epoch Run1Baf is frozen]
+...
+current    mcs  Run1Ban        19 mcs.mu2e.CeEndpoint-KL.Run1Baw_best_v1_5.art  [hold: epoch Run1Ban is frozen]
+...
+current    nts  Run1Ban        19 nts.mu2e.CeEndpoint-KL.Run1Baw_best_v1_5.root  [hold: epoch Run1Ban is frozen]
+```
+
+87 rows: 31 dig, 29 mcs, 27 nts. Columns are status, tier, epoch,
+number of files, dataset. `--status stale` lists what is owed a remake,
+`--status superseded` what has been replaced. For one dataset:
+
+```
+$ bin/epochs lookup --family Run1B dig.mu2e.CeEndpoint.Run1Ban_best_v1_4-000.art
+{
+ "kind": "member", "epoch": "Run1Ban", "tier": "dig", "status": "current",
+ "hold": "epoch Run1Ban is frozen", "nfiles": 19,
+ "parents": ["dts.mu2e.CeEndpoint.Run1Bab.art"],
+ "children": ["mcs.mu2e.CeEndpoint-KL.Run1Baw_best_v1_5.art", ...],
+ "superseded_by": "",
+ "generation": {...}, "generation_reason": null
+}
+```
+
+### 2. What made it?
+
+The name is a claim; the job configuration is the fact. The tool opens
+the cnf tarball that produced each dataset and reads the Musing, the
+Offline version, the geometry, the conditions and the fcl. Names cannot
+tell you this: a dsconf names a campaign, not a geometry file or a
+DbService version; ntuple dsconfs (`MDC2025-003`) name no era at all;
+and the convention is not enforced, as the first example shows.
+
+```
+$ bin/epochs lookup --family Run1B mcs.mu2e.CeEndpoint-KL.Run1Baw_best_v1_5.art
+  "generation": {
+    "label": "SimJob/Run1Baq",
+    "setup": "/cvmfs/mu2e.opensciencegrid.org/Musings/SimJob/Run1Baq/setup.sh",
+    "geometry": "Offline/Mu2eG4/geom/geom_run1_b_v40.txt",
+    "dbservice": "v1_5",
+    "cnf": "cnf.mu2e.CeEndpoint-reco.Run1Baw_best_v1_5.0.tar",
+    "source": "index"
+  }
+```
+
+Named `Run1Baw`, built with `Run1Baq`. Across a whole family, per tier:
+
+```
+$ bin/epochs consistency --family Run1B
+Run1B    dig     1  SimJob/MDC2025av                  NoPrimaryMix1BB
+Run1B    dig     8  SimJob/Run1Baf                    CeEndpointMixLow, DIOtail0_60MixLow, ...
+Run1B    dig     8  SimJob/Run1Bah                    DIOtail0_60, DIOtail0_60Mix1BB, ...
+Run1B    dig     8  SimJob/Run1Ban                    CeEndpoint, CeEndpointMix1BB, CosmicCRYAll, ...
+Run1B    mcs     8  SimJob/Run1Baf                    CeEndpointMixLow-KL, DIOtail0_60MixLow-KL, ...
+Run1B    mcs     8  SimJob/Run1Bah                    DIOtail0_60-KL, DIOtail0_60Mix1BB-KL, ...
+Run1B    mcs    13  SimJob/Run1Baq                    CeEndpoint-KL, CeEndpointMix1BB-KL, CosmicCRYAll-KL, ...
+Run1B    nts     7  AnalysisMDC2025/v01_01_04         CeEndpointMixLow-KL, DIOtail0_60MixLow-KL, ...
+Run1B    nts     7  AnalysisMDC2025/v01_02_00         DIOtail0_60-KL, DIOtail0_60Mix1BB-KL, ...
+Run1B    nts    13  AnalysisMDC2025/v02_01_00         CeEndpoint-KL, CeEndpointMix1BB-KL, ...
+```
+
+Columns: family, tier, how many current datasets, the generation that
+made them, their descs (trimmed here; the tool prints all). Read it
+two ways. An analyst combining CeEndpoint-KL with DIOtail-KL is mixing
+Run1Baq reco with Run1Bah reco and two EventNtuple schemas. A producer
+planning a round reads the rows not on the newest generation as the
+re-reco list: here the eight MixLow and the eight DIOtail descs.
+
+### 3. What can be deleted together?
+
+A dig campaign plus everything made from it is one epoch. When all of
+it is replaced, the whole epoch goes at once. Two checks come first.
+
+Is the round complete? A remade parent obligates remaking every
+downstream tier (ADR 0006). `gaps` exits 1 while anything is owed:
+
+```
+$ bin/epochs gaps --family MDC2025; echo rc=$?
+missing  MDC2025ai  nts  PBINormal_33344Mix1BB                    dig.mu2e.PBINormal_33344Mix1BB.MDC2025ai_best_v1_2.art has no current nts
+missing  MDC2025au  mcs  ensembleMDS3bOnSpill                     dig.mu2e.ensembleMDS3bOnSpill.MDC2025au_best_v1_5.art has no current mcs
+...
+rc=0
+```
+
+Twelve `missing` rows (work not yet done) and no `stale` row, so the
+rule holds and the exit code is 0.
+
+Is the newest name thin? When the newest version has far fewer files
+than the one it replaces, the tool says so on stderr rather than
+guessing which one you meant:
+
+```
+count warning: dig.mu2e.NoPrimaryMix1BB.Run1Bav_best_v1_5-003.art 2000 files vs dig.mu2e.NoPrimaryMix1BB.Run1Bav_best_v1_5-001.art 20000
+```
+
+Then the delete list, in the format the data manager's purge tool
+reads. It always builds every family, and it refuses to print anything
+while the catalog is incomplete:
+
+```
+$ bin/epochs retire --family Run1B
+```
+
+Empty today: every Run1B epoch is `frozen`, a hold on every member, so
+nothing in Run1B is proposed. A row, when there is one, looks like
+`DELETE - - YES 20000 dig.mu2e.X.Run1Bah_best_v1_4.art NONE # superseded by dig.mu2e.X.Run1Ban_best_v1_4-000.art`.
 
 ## How it fits together
 
