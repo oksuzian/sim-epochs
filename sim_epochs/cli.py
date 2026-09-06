@@ -319,24 +319,10 @@ def cmd_gaps(args, source):
 
 
 def _consistency_lines(rows):
-    """Text rows. The desc column names the descs of a MINORITY generation
-    for its tier, so the reader sees who differs; the largest group says
-    so instead of listing everything (the JSON form lists every row's
-    descs). Several generations can tie for largest."""
-    largest = {}
-    for r in rows:
-        if not r['minority']:
-            largest[(r['family'], r['tier'])] = largest.get((r['family'], r['tier']), 0) + 1
-    out = []
-    for r in rows:
-        if r['minority']:
-            tail = ', '.join(r['descs'])
-        elif largest[(r['family'], r['tier'])] > 1:
-            tail = '(largest group, tied)'
-        else:
-            tail = '(largest group)'
-        out.append(f"{r['family']:<8} {r['tier']:<4} {r['count']:>4}  {r['generation']:<32}  {tail}")
-    return out
+    """Text rows: family, tier, how many current datasets, which generation
+    made them, and their descs. Every row lists its descs."""
+    return [f"{r['family']:<8} {r['tier']:<4} {r['count']:>4}  {r['generation']:<32}  {', '.join(r['descs'])}"
+            for r in rows]
 
 
 def cmd_consistency(args, source):
